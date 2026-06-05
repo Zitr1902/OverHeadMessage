@@ -1,0 +1,142 @@
+# ==========================================================================
+#  OverHeadMessage configuration
+#  Author: ZiTr_
+# ==========================================================================
+
+# How long (in server ticks, 20 ticks = 1 second) the message stays above the
+# head before it starts fading out.
+display-time-ticks: 120
+
+# Appear animation length, in ticks. The text scales up from ~0 to full size.
+fade-in-ticks: 2
+
+# Gentle idle bobbing while the message is shown (no flicker).
+idle-animation: true
+
+# Disappear animation length, in ticks. The text flies upward while shrinking.
+fade-out-ticks: 4
+
+# Maximum message length. Longer messages are truncated before being shown.
+max-message-length: 80
+
+# Vertical offset of the text above the player's head.
+y-offset: 0.35
+
+# Overall text scale.
+scale: 0.9
+
+# Draw a drop shadow behind the text.
+text-shadow: true
+
+# List of worlds where the plugin is active. Leave empty ([]) to enable everywhere.
+# Example:
+#   enabled-worlds:
+#     - world
+#     - world_nether
+enabled-worlds: []
+
+# Print verbose debug information to the console.
+debug: false
+
+# --------------------------------------------------------------------------
+#  Text colors
+# --------------------------------------------------------------------------
+# Colors are hex values (#RRGGBB).
+#
+# default          -> color for a normal message.
+# with_exclamation -> color used when the message starts with '!'.
+#                     The leading '!' is removed and never shown above the head;
+#                     it only switches the text color.
+#
+# LuckPerms integration (optional, soft-depend):
+#   If LuckPerms is installed, a player's group can override these colors.
+#   group_priority is checked top to bottom; the first matching group the
+#   player belongs to wins (players often inherit several groups).
+#   A group listed in group_overrides may override 'default' and/or
+#   'with_exclamation'; anything not overridden falls back to the values above.
+colors:
+  default: '#FFFFFF'
+  with_exclamation: '#FF6B6B'
+
+  group_priority:
+    - admin
+    - moderator
+
+  group_overrides:
+    admin:
+      default: '#FF5555'
+      with_exclamation: '#FFAA00'
+    moderator:
+      default: '#55FFFF'
+      with_exclamation: '#00FFAA'
+
+# --------------------------------------------------------------------------
+#  AFK overhead message
+# --------------------------------------------------------------------------
+# When a player stays completely still for `idle-ticks`, an AFK message appears
+# above their head: the first line is a random phrase, the second line is a
+# live timer of how long they have been AFK. Any movement / interaction / chat
+# clears it instantly.
+afk:
+  enabled: true
+
+  # Idle time (in server ticks, 20 = 1s) with no movement before a player
+  # is marked AFK.
+  idle-ticks: 600
+
+  # How often (in ticks) the AFK timer text refreshes.
+  update-interval-ticks: 20
+
+  # AFK tag exposed via PlaceholderAPI as %ohm_afk% (empty when not AFK), so you
+  # can place it wherever you want (tab, scoreboard, nametag plugin, ...).
+  # It is NOT shown above the head. Supports inline hex (#RRGGBB) and & codes.
+  # Related placeholders: %ohm_afk_time% (e.g. "1h 2m"), %ohm_afk_state% (true/false).
+  placeholder_text: '#888888 >> #D0BE9BAFK'
+
+  # Wrapper for the overhead timer line. %time% is replaced by an adaptive timer
+  # that shows seconds, then minutes, then hours+minutes (e.g. 30s -> 1m -> 1h 2m).
+  timer_text_format: '&7⌚ %time%'
+
+  # One random line is chosen when a player becomes AFK.
+  # %group_color% is replaced by the player's group "with_exclamation" color.
+  messages:
+    - '%group_color%Stepped away, don''t whine'
+    - '%group_color%AFK. Breathe easy'
+    - '%group_color%Paused. The world won''t end'
+    - '%group_color%Be back, don''t panic'
+    - '%group_color%Don''t touch, I''m AFK'
+    - '%group_color%Quiet, gone on business'
+    - '%group_color%Off to handle some things'
+    - '%group_color%No time for chat right now'
+    - '%group_color%Stepped away, no panic'
+    - '%group_color%On a break, relax'
+    - '%group_color%AFK, hold the line'
+    - '%group_color%Back soon, don''t fuss'
+    - '%group_color%Gone to reboot my brain'
+    - '%group_color%Got distracted. Yeah, again'
+    - '%group_color%Chat can wait a minute'
+    - '%group_color%Paused. Don''t dramatize it'
+    - '%group_color%Gone for a bit, carry on'
+    - '%group_color%Technical AFK'
+    - '%group_color%Away, keep things under control'
+    - '%group_color%Back soon, we''ll sort it out'
+    - '%group_color%AFK. No questions asked'
+    - '%group_color%On pause, don''t bug me'
+    - '%group_color%Urgent offline moment'
+    - '%group_color%Real life hit, I''m away'
+    - '%group_color%Chill mode activated'
+    - '%group_color%Gone for fuel'
+    - '%group_color%Quick break'
+    - '%group_color%Still here, just AFK'
+    - '%group_color%A minute of silence'
+    - '%group_color%One sec, sorting it out'
+    - '%group_color%Away. Don''t fall apart'
+    - '%group_color%AFK. Command temporarily unavailable'
+    - '%group_color%Break to survive real life'
+    - '%group_color%Back soon to continue the rampage'
+    - '%group_color%Time-out, no tantrums'
+    - '%group_color%Away, hold your position'
+    - '%group_color%Short trip to reality'
+    - '%group_color%Off on an important mission'
+    - '%group_color%AFK, but with you in spirit'
+    - '%group_color%Back in a moment, don''t get lost'

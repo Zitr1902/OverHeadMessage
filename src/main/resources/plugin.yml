@@ -1,0 +1,19 @@
+name: OverHeadMessage
+version: '${project.version}'
+main: ru.zitr.overheadmessage.OverHeadMessage
+api-version: '1.21'
+author: ZiTr_
+description: Duplicates player chat messages above their head using TextDisplay.
+folia-supported: false
+softdepend: [LuckPerms, PlaceholderAPI]
+
+commands:
+  ohm:
+    description: OverHeadMessage admin command.
+    usage: /ohm <reload|status>
+    permission: overheadmessage.admin
+
+permissions:
+  overheadmessage.admin:
+    description: Allows managing OverHeadMessage.
+    default: op
