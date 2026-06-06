@@ -26,6 +26,30 @@ public class ChatListener implements Listener {
         this.afkManager = afkManager;
     }
 
+    // Runs FIRST (LOWEST): if the sender is AFK, we must clear AFK before any chat
+    // plugin formats the line, otherwise the %ohm_afk% placeholder leaks into chat
+    // and AFK looks like it never turned off. So we hold the message: cancel it,
+    // clear AFK on the main thread (placeholder becomes empty), then re-send the
+    // chat so it goes out cleanly through the normal pipeline.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onChatAfkGuard(AsyncPlayerChatEvent event) {
+        final Player player = event.getPlayer();
+        if (!afkManager.isAfk(player.getUniqueId())) {
+            return;
+        }
+        final String message = event.getMessage();
+        event.setCancelled(true);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            // Clear AFK first so %ohm_afk% / the AFK display are gone...
+            afkManager.clearAfk(player);
+            // ...then let the message continue (player is no longer AFK on this pass).
+            player.chat(message);
+        });
+    }
+
     // Chat is async; we only READ here and dispatch entity work to the main thread.
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
