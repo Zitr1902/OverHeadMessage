@@ -13,12 +13,12 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Detects idle players and shows an AFK message above their head:
@@ -33,7 +33,8 @@ public class AfkManager implements Listener {
     private final OverheadMessageManager manager;
 
     private final Map<UUID, Long> lastActive = new HashMap<>();
-    private final Set<UUID> afk = new HashSet<>();
+    // Read from the async chat thread (isAfk), written on the main thread, so it must be concurrent.
+    private final Set<UUID> afk = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Long> afkSince = new HashMap<>();
     private final Map<UUID, String> afkMessage = new HashMap<>();
     private final Random random = new Random();
@@ -175,6 +176,15 @@ public class AfkManager implements Listener {
     /** Called from the chat listener: clears AFK but lets show() replace the display. */
     public void notifyChat(Player p) {
         markActive(p, false);
+    }
+
+    /**
+     * Fully clears AFK and removes the AFK overhead display. Used to hold an AFK
+     * player's chat message: AFK is cleared first (so %ohm_afk% becomes empty)
+     * before the message is re-sent into chat. Main thread only.
+     */
+    public void clearAfk(Player p) {
+        markActive(p, true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
