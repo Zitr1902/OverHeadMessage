@@ -1,5 +1,6 @@
 package ru.zitr.overheadmessage;
 
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -84,14 +85,23 @@ public class AfkManager implements Listener {
                 continue;
             }
             if (!afk.contains(id)) {
-                if (now - last >= thresholdMs && config.isWorldEnabled(p.getWorld().getName())) {
+                if (now - last >= thresholdMs && config.isWorldEnabled(p.getWorld().getName())
+                        && isAfkAllowed(p)) {
                     enterAfk(p, now);
                 }
+            } else if (!isAfkAllowed(p)) {
+                // Player became a spectator or died while AFK: drop the AFK display.
+                markActive(p, true);
             } else {
                 long elapsed = now - afkSince.getOrDefault(id, now);
                 manager.updateAfk(p, buildText(afkMessage.get(id), elapsed));
             }
         }
+    }
+
+    /** AFK is disabled for spectators and for dead players (death screen, not yet respawned). */
+    private boolean isAfkAllowed(Player p) {
+        return p.getGameMode() != GameMode.SPECTATOR && !p.isDead();
     }
 
     private void enterAfk(Player p, long now) {
