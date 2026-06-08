@@ -38,6 +38,15 @@ enabled-worlds: []
 # Print verbose debug information to the console.
 debug: false
 
+# Shift + right-click on a player to show their name above their head.
+# Placeholders:
+#   %name%        -> the clicked player's name
+#   %group_color% -> the clicked player's group "with_exclamation" color
+# Supports inline hex (#RRGGBB) and & color codes.
+# Leave empty ('') to disable this feature. While the name is shown, clicking
+# the same player again does nothing until it fades out.
+shift_right_click_name_format: '#AAAAAA>> %group_color%%name% #AAAAAA<<'
+
 # --------------------------------------------------------------------------
 #  Text colors
 # --------------------------------------------------------------------------
