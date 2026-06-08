@@ -29,6 +29,9 @@ public class OverheadDisplay {
     private volatile String text;
     private final UUID playerId;
     private final boolean persistent;
+    private final boolean nameDisplay;
+    // If set, only this player may see the display (shift+right-click name); null = everyone.
+    private final UUID viewerId;
 
     private TextDisplay entity;
     private BukkitRunnable task;
@@ -42,13 +45,15 @@ public class OverheadDisplay {
     private final float baseY;
 
     public OverheadDisplay(OverHeadMessage plugin, ConfigManager config, OverheadMessageManager manager,
-                           Player player, String text, boolean persistent) {
+                           Player player, String text, boolean persistent, boolean nameDisplay, UUID viewerId) {
         this.plugin = plugin;
         this.config = config;
         this.manager = manager;
         this.player = player;
         this.text = text;
         this.persistent = persistent;
+        this.nameDisplay = nameDisplay;
+        this.viewerId = viewerId;
         this.playerId = player.getUniqueId();
         this.targetScale = (float) config.getScale();
         this.baseY = (float) config.getYOffset();
@@ -56,6 +61,37 @@ public class OverheadDisplay {
 
     public boolean isPersistent() {
         return persistent;
+    }
+
+    /** True if this display is a shift+right-click name (has the one-press lock). */
+    public boolean isNameDisplay() {
+        return nameDisplay;
+    }
+
+    UUID getViewerId() {
+        return viewerId;
+    }
+
+    UUID getTargetId() {
+        return playerId;
+    }
+
+    boolean isRemoved() {
+        return removed;
+    }
+
+    /** Reveal this (public) display to a specific viewer again. */
+    void revealTo(Player viewer) {
+        if (entity != null && entity.isValid()) {
+            try { viewer.showEntity(plugin, entity); } catch (Throwable ignored) {}
+        }
+    }
+
+    /** Hide this (public) display from a specific viewer (they see the private name instead). */
+    void hideFrom(Player viewer) {
+        if (entity != null && entity.isValid()) {
+            try { viewer.hideEntity(plugin, entity); } catch (Throwable ignored) {}
+        }
     }
 
     /** Live-updates the displayed text (used by the AFK timer). */
@@ -84,6 +120,7 @@ public class OverheadDisplay {
             org.bukkit.Location spawnLoc = player.getEyeLocation().add(0, baseY, 0);
             entity = player.getWorld().spawn(spawnLoc, TextDisplay.class, this::configure);
             player.addPassenger(entity);
+            applyViewer();
         } catch (Throwable t) {
             if (config.isDebug()) {
                 plugin.getLogger().warning("Failed to spawn TextDisplay: " + t.getMessage());
@@ -175,7 +212,11 @@ public class OverheadDisplay {
         } catch (Throwable ignored) {
         } finally {
             entity = null;
-            manager.forget(playerId, this);
+            if (nameDisplay) {
+                manager.forgetName(this);
+            } else {
+                manager.forget(playerId, this);
+            }
         }
     }
 
@@ -185,6 +226,11 @@ public class OverheadDisplay {
         d.setText(text);
         d.setBillboard(Display.Billboard.CENTER);
         d.setPersistent(false);
+        // Private (shift+right-click name) display: hidden for everyone by default,
+        // so it stays hidden from players who join while it is shown too.
+        if (viewerId != null) {
+            try { d.setVisibleByDefault(false); } catch (Throwable ignored) {}
+        }
         // Background and see-through are fixed defaults (not configurable).
         trySetSeeThrough(d);
         trySetShadowed(d, config.isTextShadow());
@@ -205,6 +251,17 @@ public class OverheadDisplay {
         try {
             d.setViewRange(64f);
         } catch (Throwable ignored) {}
+    }
+
+    /** For a private name display, reveal the entity only to the viewer who clicked. */
+    private void applyViewer() {
+        if (viewerId == null || entity == null) {
+            return;
+        }
+        Player viewer = plugin.getServer().getPlayer(viewerId);
+        if (viewer != null) {
+            try { viewer.showEntity(plugin, entity); } catch (Throwable ignored) {}
+        }
     }
 
     private void applyTransform(float scale, float y, int interpolationTicks) {
