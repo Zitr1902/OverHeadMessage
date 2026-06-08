@@ -94,7 +94,16 @@ public class AfkManager implements Listener {
                 markActive(p, true);
             } else {
                 long elapsed = now - afkSince.getOrDefault(id, now);
-                manager.updateAfk(p, buildText(afkMessage.get(id), elapsed));
+                String text = buildText(afkMessage.get(id), elapsed);
+                if (manager.hasActive(id)) {
+                    // Our AFK display (refresh the timer), or a name display sitting
+                    // on top from a shift+right-click (left untouched by updateAfk).
+                    manager.updateAfk(p, text);
+                } else {
+                    // The AFK display was replaced (e.g. by a name display) and that
+                    // replacement has since faded: bring the AFK text back.
+                    manager.showAfk(p, text);
+                }
             }
         }
     }
