@@ -7,7 +7,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.UUID;
 
 public class ChatListener implements Listener {
 
@@ -93,13 +98,68 @@ public class ChatListener implements Listener {
         });
     }
 
+    // Shift + right-click on another player shows that player's name above their
+    // head. While a display is already up for the target, re-triggering is ignored
+    // until it disappears.
+    @EventHandler(ignoreCancelled = true)
+    public void onShiftRightClick(PlayerInteractEntityEvent event) {
+        // PlayerInteractAtEntityEvent is a subclass and fires alongside the base
+        // event; skip it so the click is handled exactly once.
+        if (event instanceof PlayerInteractAtEntityEvent) {
+            return;
+        }
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return; // ignore the off-hand pass
+        }
+        Player clicker = event.getPlayer();
+        if (!clicker.isSneaking()) {
+            return;
+        }
+        if (!(event.getRightClicked() instanceof Player target)) {
+            return;
+        }
+        String format = config.getShiftRightClickNameFormat();
+        if (format == null || format.isEmpty()) {
+            return;
+        }
+        if (!config.isWorldEnabled(target.getWorld().getName())) {
+            return;
+        }
+        // One-press lock: while this clicker already has a name overlay on the target,
+        // re-clicking does nothing until it fades on its own.
+        if (manager.hasNameOverlay(target.getUniqueId(), clicker.getUniqueId())) {
+            return;
+        }
+        String groupColor = ColorService.toLegacyColor(colors.resolveHex(target, true));
+        final String text = ColorService.colorize(format
+                .replace("%group_color%", groupColor)
+                .replace("%name%", target.getName()));
+        // Defer to the next tick (like chat). Spawning the TextDisplay and mounting
+        // it as a passenger from inside the interact event itself can fail to take,
+        // leaving the text floating at the spawn point with no fade-in animation.
+        // showName adds a PRIVATE overlay seen only by the clicker; the target's
+        // public chat / AFK display stays for everyone else, just hidden from the
+        // clicker until the name ends.
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!target.isOnline() || !clicker.isOnline()
+                    || manager.hasNameOverlay(target.getUniqueId(), clicker.getUniqueId())) {
+                return;
+            }
+            manager.showName(target, clicker, text);
+        });
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        manager.remove(event.getPlayer().getUniqueId(), false);
+        UUID id = event.getPlayer().getUniqueId();
+        manager.remove(id, false);
+        manager.removeNameOverlaysFor(id);
     }
 
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
-        manager.remove(event.getEntity().getUniqueId(), false);
+        UUID id = event.getEntity().getUniqueId();
+        manager.remove(id, false);
+        manager.removeNameOverlaysFor(id);
     }
 }
